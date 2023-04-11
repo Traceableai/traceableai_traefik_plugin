@@ -1,0 +1,26 @@
+http:
+  routers:
+    whoami-router:
+      rule: "Host(`echo-service.com`)"
+      service: echo-service
+      middlewares:
+        - my-plugin-traceableai
+
+  services:
+    echo-service:
+      loadBalancer:
+        servers:
+          - url: "http://echo-service:8080"
+
+  middlewares:
+    my-plugin-traceableai:
+      plugin:
+        plugin-traceableai:
+          allowedContentTypes:
+            - "json"
+            - "xml"
+            - "x-www-form-urlencoded"
+            - "grpc"
+          bodyCaptureSize: 131072
+          serviceName: traefik
+          tpaEndpoint: http://docker.for.mac.localhost:5442

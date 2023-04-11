@@ -1,0 +1,16 @@
+displayName: Traceable Plugin
+type: middleware
+
+import: github.com/traceableai/traceableai_traefik_plugin
+
+summary: 'traceable.ai data collection middleware'
+
+testData:
+  allowedContentTypes:
+    - "json"
+    - "xml"
+    - "x-www-form-urlencoded"
+    - "grpc"
+  bodyCaptureSize: 131072
+  serviceName: traefik
+  tpaEndpoint: http://localhost:5442
