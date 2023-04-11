@@ -1,4 +1,6 @@
-# Configuration
+# Traceable Traefik Plugin
+
+## Configuration
 
 To configure the Traceable Traefik plugin you will need a Traceable Platform Agent deployed and configured.
 In Kubernetes, you could deploy TME as a sidecar to your traefik deployment.
