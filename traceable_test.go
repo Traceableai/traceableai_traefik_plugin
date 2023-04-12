@@ -35,8 +35,7 @@ func TestMakeRequest(t *testing.T) {
 
 	extCapData := ExtCapReqRes{
 		Request: HttpRequest{
-			MicrosSinceEpoch: 123456789,
-			Method:           "POST",
+			Method: "POST",
 			Headers: map[string]string{
 				"Content-Type":  "application/json",
 				"X-Test-Header": "test-value",

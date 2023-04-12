@@ -42,15 +42,14 @@ type HttpResponse struct {
 }
 
 type HttpRequest struct {
-	MicrosSinceEpoch uint64            `json:"micros_since_epoch"`
-	Method           string            `json:"method"`
-	Headers          map[string]string `json:"headers"`
-	Scheme           string            `json:"scheme"`
-	Path             string            `json:"path"`
-	Host             string            `json:"host"`
-	Body             []byte            `json:"body"`
-	SourceAddress    string            `json:"source_address"`
-	SourcePort       int32             `json:"source_port"`
+	Method        string            `json:"method"`
+	Headers       map[string]string `json:"headers"`
+	Scheme        string            `json:"scheme"`
+	Path          string            `json:"path"`
+	Host          string            `json:"host"`
+	Body          []byte            `json:"body"`
+	SourceAddress string            `json:"source_address"`
+	SourcePort    int32             `json:"source_port"`
 }
 
 type responseWriter struct {
@@ -79,7 +78,6 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	extCap.RequestTimeStampInMs = uint64(startTime.UnixMilli())
 
 	extCap.Request = HttpRequest{}
-	extCap.Request.MicrosSinceEpoch = uint64(startTime.UnixMilli())
 	extCap.Request.Path = req.URL.Path
 	extCap.Request.Host = req.Host
 	extCap.Request.Method = req.Method
