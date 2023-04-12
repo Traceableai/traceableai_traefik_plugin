@@ -79,6 +79,7 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	extCap.RequestTimeStampInMs = uint64(startTime.UnixMilli())
 
 	extCap.Request = HttpRequest{}
+	extCap.Request.MicrosSinceEpoch = uint64(startTime.UnixMilli())
 	extCap.Request.Path = req.URL.Path
 	extCap.Request.Host = req.Host
 	extCap.Request.Method = req.Method
