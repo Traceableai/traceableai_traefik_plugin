@@ -1,5 +1,10 @@
 http:
   routers:
+    routerTest:
+      service: grpc-service
+      rule: Headers(`host`, `frontend.local`)
+      middlewares:
+        - my-plugin-traceableai
     whoami-router:
       rule: "Host(`echo-service.com`)"
       service: echo-service
@@ -7,10 +12,14 @@ http:
         - my-plugin-traceableai
 
   services:
+    grpc-service:
+      loadBalancer:
+        servers:
+          - url: h2c://grpc-service:8090
     echo-service:
       loadBalancer:
         servers:
-          - url: "http://echo-service:8080"
+          - url: http://echo-service:8080
 
   middlewares:
     my-plugin-traceableai:

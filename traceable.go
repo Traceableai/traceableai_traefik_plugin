@@ -123,12 +123,35 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		extCap.Response.Body = wrappedWriter.buffer.Bytes()
 	}
 
-	extCap.Response.StatusCode = int32(wrappedWriter.statusCode)
+	if isGrpc(extCap.Response.Headers) {
+		extCap.Response.StatusCode = int32(grpcStatusCode(extCap.Response.Headers))
+	} else {
+		extCap.Response.StatusCode = int32(wrappedWriter.statusCode)
+	}
 
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
 
 	MakeRequest(plugin.config, extCap, duration)
+}
+
+func isGrpc(headers map[string]string) bool {
+	if contentType, ok := headers["content-type"]; ok {
+		return strings.Contains(contentType, "grpc")
+	}
+	return false
+}
+func grpcStatusCode(headers map[string]string) int {
+	if statusCode, ok := headers["trailer:grpc-status"]; ok {
+		intCode, err := strconv.Atoi(statusCode)
+		if err != nil {
+			// default to unknown
+			return 2
+		}
+		return intCode
+	}
+	// default to unknown
+	return 2
 }
 
 func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration) {
