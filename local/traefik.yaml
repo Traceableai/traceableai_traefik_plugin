@@ -1,0 +1,17 @@
+entryPoints:
+  web:
+    address: :80
+api:
+  insecure: true
+  dashboard: true
+providers:
+  docker: {}
+  file:
+    filename: /plugins-local/src/github.com/traceableai/traceableai_traefik_plugin/local/dynamic_conf.yaml
+log:
+  level: ERROR
+
+experimental:
+  localPlugins:
+    plugin-traceableai:
+      moduleName: github.com/traceableai/traceableai_traefik_plugin
