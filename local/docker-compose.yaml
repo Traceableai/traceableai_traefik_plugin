@@ -23,10 +23,3 @@ services:
       - traefik.http.services.grpc-service.loadbalancer.server.scheme=h2c
     ports:
       - "8090:8090"
-
-  grpc-client:
-    links:
-      - reverse-proxy
-    build:
-      context: ./grpc
-      dockerfile: Dockerfile-client

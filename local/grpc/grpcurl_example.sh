@@ -1,4 +1,4 @@
-# Run this from this direcotory
+# Run this from this directory
 # make sure you have grpcurl installed
 
 grpcurl -vv -H="Host: frontend.local" -d '{"name": "Alice"}' \
