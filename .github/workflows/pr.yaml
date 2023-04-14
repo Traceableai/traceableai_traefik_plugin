@@ -47,4 +47,4 @@ jobs:
           cd local
           docker-compose logs reverse-proxy > logs.txt
           cd .. 
-          ./test.sh logs.txt
+          ./test.sh ./local/logs.txt
