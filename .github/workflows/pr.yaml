@@ -37,12 +37,13 @@ jobs:
           sudo apt-get install -y docker-compose
 
       - name: Start Docker Compose stack
-        run: docker-compose up reverse-proxy -d
+        run: cd local && docker-compose up reverse-proxy -d
 
       - name: Wait on startup
         run: sleep 45
 
       - name: Ensure startup without errors
         run: | 
+          cd local
           docker-compose logs reverse-proxy > logs.txt
           ./test.sh logs.txt
