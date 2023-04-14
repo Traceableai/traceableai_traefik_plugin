@@ -188,3 +188,67 @@ func TestSplitIPAndPortInvalidInput(t *testing.T) {
 		t.Errorf("unexpected error type, got: %T, want: *net.AddrError", err)
 	}
 }
+
+func TestIsGrpc(t *testing.T) {
+	tests := []struct {
+		name    string
+		headers map[string]string
+		want    bool
+	}{
+		{
+			name:    "Content-Type with grpc",
+			headers: map[string]string{"content-type": "application/grpc"},
+			want:    true,
+		},
+		{
+			name:    "Content-Type without grpc",
+			headers: map[string]string{"content-type": "application/json"},
+			want:    false,
+		},
+		{
+			name:    "No Content-Type header",
+			headers: map[string]string{},
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isGrpc(tt.headers); got != tt.want {
+				t.Errorf("isGrpc() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGrpcStatusCode(t *testing.T) {
+	tests := []struct {
+		name    string
+		headers map[string]string
+		want    int
+	}{
+		{
+			name:    "trailer:grpc-status with valid status code",
+			headers: map[string]string{"trailer:grpc-status": "3"},
+			want:    3,
+		},
+		{
+			name:    "trailer:grpc-status with invalid status code",
+			headers: map[string]string{"trailer:grpc-status": "invalid"},
+			want:    2,
+		},
+		{
+			name:    "No trailer:grpc-status header",
+			headers: map[string]string{},
+			want:    2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := grpcStatusCode(tt.headers); got != tt.want {
+				t.Errorf("grpcStatusCode() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -51,3 +51,9 @@ You can access the traefik dashboard at `http://localhost:8080`.
 
 You can access the echo service by sendina  `Host` header set to `echo-service.docker.localhost`.
 Example: `curl -H "Host: echo-service.docker.localhost" http://localhost:80`
+
+To test grpc, run `docker-compose up grpc-server` to start a grpc server.
+
+Then use the example `grpcurl_example.sh`, make sure you run the script from the `local/grpc` directory.
+
+ex: `cd ./local/grpc && ./grpcurl_example.sh`
