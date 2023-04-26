@@ -78,7 +78,8 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	extCap.RequestTimeStampInMs = uint64(startTime.UnixMilli())
 
 	extCap.Request = HttpRequest{}
-	extCap.Request.Path = req.URL.Path
+	plainPath := req.URL.Path
+	extCap.Request.Path = req.URL.RequestURI()
 	extCap.Request.Host = req.Host
 	extCap.Request.Method = req.Method
 
@@ -105,7 +106,7 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	extCap.Response = HttpResponse{}
 	if len(extCap.Request.Scheme) > 0 && len(extCap.Request.Host) > 0 && len(extCap.Request.Path) > 0 {
-		extCap.Response.RequestUrl = extCap.Request.Scheme + "://" + extCap.Request.Host + extCap.Request.Path
+		extCap.Response.RequestUrl = extCap.Request.Scheme + "://" + extCap.Request.Host + plainPath
 	}
 
 	wrappedWriter := &responseWriter{
@@ -124,7 +125,7 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if isGrpc(extCap.Response.Headers) {
-		extCap.Response.StatusCode = int32(grpcStatusCode(extCap.Response.Headers))
+		setGrpcStatus(extCap.Response.Headers)
 	} else {
 		extCap.Response.StatusCode = int32(wrappedWriter.statusCode)
 	}
@@ -141,17 +142,11 @@ func isGrpc(headers map[string]string) bool {
 	}
 	return false
 }
-func grpcStatusCode(headers map[string]string) int {
+func setGrpcStatus(headers map[string]string) {
 	if statusCode, ok := headers["trailer:grpc-status"]; ok {
-		intCode, err := strconv.Atoi(statusCode)
-		if err != nil {
-			// default to unknown
-			return 2
-		}
-		return intCode
+		delete(headers, "trailer:grpc-status")
+		headers["grpc-status"] = statusCode
 	}
-	// default to unknown
-	return 2
 }
 
 func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration) {

@@ -53,7 +53,7 @@ func TestMakeRequest(t *testing.T) {
 				"X-Test-Response-Header": "test-value",
 			},
 			Body:       []byte(`{"test": "response body"}`),
-			RequestUrl: "http://example.com/test/path",
+			RequestUrl: "http://example.com/test/path?test=1&other=2",
 			StatusCode: 200,
 		},
 	}
@@ -225,30 +225,36 @@ func TestGrpcStatusCode(t *testing.T) {
 	tests := []struct {
 		name    string
 		headers map[string]string
-		want    int
+		copy    bool
 	}{
 		{
 			name:    "trailer:grpc-status with valid status code",
 			headers: map[string]string{"trailer:grpc-status": "3"},
-			want:    3,
+			copy:    true,
 		},
 		{
 			name:    "trailer:grpc-status with invalid status code",
 			headers: map[string]string{"trailer:grpc-status": "invalid"},
-			want:    2,
+			copy:    true,
 		},
 		{
 			name:    "No trailer:grpc-status header",
 			headers: map[string]string{},
-			want:    2,
+			copy:    false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := grpcStatusCode(tt.headers); got != tt.want {
-				t.Errorf("grpcStatusCode() = %v, want %v", got, tt.want)
+			original := tt.headers["trailer:grpc-status"]
+			setGrpcStatus(tt.headers)
+			if tt.copy {
+				assert.Equal(t, tt.headers["grpc-status"], original)
+				assert.Empty(t, tt.headers["trailer:grpc-status"])
+			} else {
+				assert.Empty(t, tt.headers["grpc-status"])
 			}
+
 		})
 	}
 }
