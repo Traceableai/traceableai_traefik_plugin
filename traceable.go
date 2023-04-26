@@ -124,7 +124,7 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if isGrpc(extCap.Response.Headers) {
-		extCap.Response.StatusCode = int32(grpcStatusCode(extCap.Response.Headers))
+		setGrpcStatus(extCap.Response.Headers)
 	} else {
 		extCap.Response.StatusCode = int32(wrappedWriter.statusCode)
 	}
@@ -141,17 +141,11 @@ func isGrpc(headers map[string]string) bool {
 	}
 	return false
 }
-func grpcStatusCode(headers map[string]string) int {
+func setGrpcStatus(headers map[string]string) {
 	if statusCode, ok := headers["trailer:grpc-status"]; ok {
-		intCode, err := strconv.Atoi(statusCode)
-		if err != nil {
-			// default to unknown
-			return 2
-		}
-		return intCode
+		delete(headers, "trailer:grpc-status")
+		headers["grpc-status"] = statusCode
 	}
-	// default to unknown
-	return 2
 }
 
 func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration) {
