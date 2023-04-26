@@ -53,7 +53,7 @@ func TestMakeRequest(t *testing.T) {
 				"X-Test-Response-Header": "test-value",
 			},
 			Body:       []byte(`{"test": "response body"}`),
-			RequestUrl: "http://example.com/test/path?test=1&other=2",
+			RequestUrl: "http://example.com/test/path",
 			StatusCode: 200,
 		},
 	}
