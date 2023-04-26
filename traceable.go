@@ -104,8 +104,10 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	extCap.Response = HttpResponse{}
-	if len(extCap.Request.Scheme) > 0 && len(extCap.Request.Host) > 0 && len(extCap.Request.Path) > 0 {
-		extCap.Response.RequestUrl = extCap.Request.Scheme + "://" + extCap.Request.Host + extCap.Request.Path
+
+	url, valid := buildRequestUrl(req, extCap)
+	if valid {
+		extCap.Response.RequestUrl = url
 	}
 
 	wrappedWriter := &responseWriter{
@@ -208,6 +210,14 @@ func canRecordBody(headers map[string]string, config *Config) bool {
 		}
 	}
 	return false
+}
+
+func buildRequestUrl(req *http.Request, extcap ExtCapReqRes) (string, bool) {
+	pathWithQueryString := req.RequestURI
+	if len(extcap.Request.Scheme) > 0 && len(extcap.Request.Host) > 0 && len(pathWithQueryString) > 0 {
+		return extcap.Request.Scheme + "://" + extcap.Request.Host + pathWithQueryString, true
+	}
+	return "", false
 }
 
 func (r *responseWriter) WriteHeader(statusCode int) {

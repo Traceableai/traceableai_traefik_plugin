@@ -53,7 +53,7 @@ func TestMakeRequest(t *testing.T) {
 				"X-Test-Response-Header": "test-value",
 			},
 			Body:       []byte(`{"test": "response body"}`),
-			RequestUrl: "http://example.com/test/path",
+			RequestUrl: "http://example.com/test/path?test=foo",
 			StatusCode: 200,
 		},
 	}
@@ -80,7 +80,7 @@ func TestMakeRequest(t *testing.T) {
 		assert.Equal(t, extCapData.Request.Headers["X-Test-Header"], "test-value")
 
 		assert.Equal(t, extCapData.Response.StatusCode, int32(200))
-		assert.Equal(t, extCapData.Response.RequestUrl, "http://example.com/test/path")
+		assert.Equal(t, extCapData.Response.RequestUrl, "http://example.com/test/path?test=foo")
 		assert.Equal(t, string(extCapData.Response.Body), "{\"test\": \"response body\"}")
 		assert.Equal(t, extCapData.Response.Headers["Content-Type"], "application/json")
 		assert.Equal(t, extCapData.Response.Headers["X-Test-Response-Header"], "test-value")
@@ -218,6 +218,42 @@ func TestIsGrpc(t *testing.T) {
 				t.Errorf("isGrpc() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBuildRequestUrl(t *testing.T) {
+	type testData struct {
+		req      *http.Request
+		extcap   ExtCapReqRes
+		expected string
+		ok       bool
+	}
+
+	tests := []testData{
+		{
+			req:      &http.Request{Method: "GET", Host: "example.com", RequestURI: "/path?foo=bar"},
+			extcap:   ExtCapReqRes{Request: HttpRequest{Scheme: "https", Host: "example.net"}},
+			expected: "https://example.net/path?foo=bar",
+			ok:       true,
+		},
+		{
+			req:      &http.Request{Method: "GET", Host: "example.com", RequestURI: "/path?foo=bar"},
+			extcap:   ExtCapReqRes{},
+			expected: "",
+			ok:       false,
+		},
+		{
+			req:      &http.Request{Method: "GET", Host: "example.com", RequestURI: ""},
+			extcap:   ExtCapReqRes{},
+			expected: "",
+			ok:       false,
+		},
+	}
+
+	for _, test := range tests {
+		url, ok := buildRequestUrl(test.req, test.extcap)
+		assert.Equal(t, test.expected, url)
+		assert.Equal(t, test.ok, ok)
 	}
 }
 
