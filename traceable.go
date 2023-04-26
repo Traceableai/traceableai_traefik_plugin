@@ -78,8 +78,7 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	extCap.RequestTimeStampInMs = uint64(startTime.UnixMilli())
 
 	extCap.Request = HttpRequest{}
-	plainPath := req.URL.Path
-	extCap.Request.Path = req.URL.RequestURI()
+	extCap.Request.Path = req.URL.Path
 	extCap.Request.Host = req.Host
 	extCap.Request.Method = req.Method
 
@@ -106,7 +105,7 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	extCap.Response = HttpResponse{}
 	if len(extCap.Request.Scheme) > 0 && len(extCap.Request.Host) > 0 && len(extCap.Request.Path) > 0 {
-		extCap.Response.RequestUrl = extCap.Request.Scheme + "://" + extCap.Request.Host + plainPath
+		extCap.Response.RequestUrl = extCap.Request.Scheme + "://" + extCap.Request.Host + extCap.Request.Path
 	}
 
 	wrappedWriter := &responseWriter{
