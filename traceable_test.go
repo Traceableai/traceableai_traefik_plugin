@@ -1,6 +1,7 @@
 package traceableai_traefik_plugin
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
@@ -15,10 +16,8 @@ import (
 func TestServeHTTP(t *testing.T) {
 	config := &Config{}
 
-	plugin := &Traceable{
-		config: config,
-		next:   http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
-	}
+	plugin, err := New(context.Background(), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), config, "traefik")
+	assert.NoError(t, err)
 
 	requestBody := `{"key": "value"}`
 	req := httptest.NewRequest(http.MethodPost, "/test", bytes.NewBufferString(requestBody))
@@ -105,8 +104,9 @@ func TestMakeRequest(t *testing.T) {
 	defer ts.Close()
 
 	config.TpaEndpoint = ts.URL
+	client := CreateClient()
 
-	MakeRequest(config, extCapData, duration)
+	MakeRequest(config, extCapData, duration, client)
 }
 
 func TestCanRecordBody(t *testing.T) {

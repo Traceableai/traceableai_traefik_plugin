@@ -26,6 +26,7 @@ type Traceable struct {
 	next   http.Handler
 	config *Config
 	name   string
+	client *http.Client
 }
 
 type ExtCapReqRes struct {
@@ -61,11 +62,21 @@ type responseWriter struct {
 }
 
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
+
 	return &Traceable{
 		config: config,
 		next:   next,
 		name:   name,
+		client: CreateClient(),
 	}, nil
+}
+
+func CreateClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: 10,
+		},
+	}
 }
 
 func CreateConfig() *Config {
@@ -134,7 +145,7 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
 
-	MakeRequest(plugin.config, extCap, duration)
+	MakeRequest(plugin.config, extCap, duration, plugin.client)
 }
 
 func isGrpc(headers map[string]string) bool {
@@ -150,7 +161,7 @@ func setGrpcStatus(headers map[string]string) {
 	}
 }
 
-func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration) {
+func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration, httpClient *http.Client) {
 	url := fmt.Sprintf("%s/ext_cap/v1/req_res_cap", config.TpaEndpoint)
 
 	nanoSeconds := strconv.Itoa(int(duration.Nanoseconds()))
@@ -163,6 +174,7 @@ func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration
 	if err != nil {
 		return
 	}
+
 	req.Header.Add("Content-Type", "application/json")
 
 	req.Header.Add("traceableai.module.name", "traefik")
@@ -174,7 +186,10 @@ func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration
 	req.Header.Add("traceableai.module.version", VERSION)
 	req.Header.Add("traceableai-module-version", VERSION)
 
-	_, _ = http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
+	if err == nil {
+		_ = resp.Body.Close()
+	}
 }
 
 func readRequestBody(req *http.Request, _ *Config) ([]byte, error) {
