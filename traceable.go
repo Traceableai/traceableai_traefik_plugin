@@ -61,18 +61,6 @@ type responseWriter struct {
 	http.ResponseWriter
 }
 
-type defaultHeadersRoundTripper struct {
-	headers   http.Header
-	transport http.RoundTripper
-}
-
-func (d *defaultHeadersRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	for k, v := range d.headers {
-		req.Header[k] = v
-	}
-	return d.transport.RoundTrip(req)
-}
-
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 
 	return &Traceable{
@@ -84,18 +72,9 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 }
 
 func CreateClient() *http.Client {
-	defaultHeaders := http.Header{
-		"traceableai.module.name":    []string{"traefik"},
-		"traceableai-module-name":    []string{"traefik"},
-		"traceableai.module.version": []string{VERSION},
-		"traceableai-module-version": []string{VERSION},
-		"Content-Type":               []string{"application/json"},
-	}
-
 	return &http.Client{
-		Transport: &defaultHeadersRoundTripper{
-			headers:   defaultHeaders,
-			transport: http.DefaultTransport,
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: 10,
 		},
 	}
 }
@@ -196,10 +175,16 @@ func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration
 		return
 	}
 
+	req.Header.Add("Content-Type", "application/json")
+
+	req.Header.Add("traceableai.module.name", "traefik")
+	req.Header.Add("traceableai-module-name", "traefik")
 	req.Header.Add("traceableai-service-name", config.ServiceName)
 	req.Header.Add("traceableai.service.name", config.ServiceName)
 	req.Header.Add("traceableai.total_duration_nanos", nanoSeconds)
 	req.Header.Add("traceableai-total-duration-nanos", nanoSeconds)
+	req.Header.Add("traceableai.module.version", VERSION)
+	req.Header.Add("traceableai-module-version", VERSION)
 
 	resp, err := httpClient.Do(req)
 	if err == nil {
