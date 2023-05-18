@@ -14,6 +14,7 @@ import (
 )
 
 const VERSION = "0.0.1-dev"
+const WORKERS = 20
 
 type Config struct {
 	AllowedContentTypes []string
@@ -26,7 +27,7 @@ type Traceable struct {
 	next   http.Handler
 	config *Config
 	name   string
-	client *http.Client
+	queue  chan *http.Request
 }
 
 type ExtCapReqRes struct {
@@ -63,20 +64,47 @@ type responseWriter struct {
 
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 
+	queue := make(chan *http.Request, 10000)
+	client := CreateClient()
+
+	for i := 0; i < WORKERS; i++ {
+		go processQueue(queue, client)
+	}
+
 	return &Traceable{
 		config: config,
 		next:   next,
 		name:   name,
-		client: CreateClient(),
+		queue:  queue,
 	}, nil
 }
 
-func CreateClient() *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: 10,
-		},
+func processQueue(queue chan *http.Request, client *http.Client) {
+	for req := range queue {
+		sendRequest(client, req, queue)
 	}
+}
+
+func sendRequest(client *http.Client, req *http.Request, queue chan *http.Request) {
+	resp, err := client.Do(req)
+	if err != nil {
+		// if a request fails, re-queue it
+		queue <- req
+	}
+	if resp != nil {
+		// discord the body, otherwise many conns will stay in TIME_WAIT state
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}
+}
+
+func CreateClient() *http.Client {
+	tr := &http.Transport{
+		MaxIdleConns:        WORKERS,
+		MaxIdleConnsPerHost: WORKERS,
+	}
+
+	return &http.Client{Transport: tr}
 }
 
 func CreateConfig() *Config {
@@ -133,7 +161,13 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if canRecordBody(extCap.Response.Headers, plugin.config) {
-		extCap.Response.Body = wrappedWriter.buffer.Bytes()
+		bodyBytes := wrappedWriter.buffer.Bytes()
+		limitSize := len(bodyBytes)
+		if limitSize > plugin.config.BodyCaptureSize {
+			limitSize = plugin.config.BodyCaptureSize
+		}
+		bodyBytes = bodyBytes[:limitSize]
+		extCap.Response.Body = bodyBytes
 	}
 
 	if isGrpc(extCap.Response.Headers) {
@@ -145,7 +179,14 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
 
-	MakeRequest(plugin.config, extCap, duration, plugin.client)
+	extCapRequest := MakeRequest(plugin.config, extCap, duration)
+	if len(plugin.queue) > 100000 {
+		return
+	}
+	if extCapRequest != nil {
+		plugin.queue <- extCapRequest
+	}
+
 }
 
 func isGrpc(headers map[string]string) bool {
@@ -161,18 +202,18 @@ func setGrpcStatus(headers map[string]string) {
 	}
 }
 
-func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration, httpClient *http.Client) {
+func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration) *http.Request {
 	url := fmt.Sprintf("%s/ext_cap/v1/req_res_cap", config.TpaEndpoint)
 
 	nanoSeconds := strconv.Itoa(int(duration.Nanoseconds()))
 	data, err := json.Marshal(extCapData)
 	if err != nil {
-		return
+		return nil
 	}
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
-		return
+		return nil
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -186,19 +227,21 @@ func MakeRequest(config *Config, extCapData ExtCapReqRes, duration time.Duration
 	req.Header.Add("traceableai.module.version", VERSION)
 	req.Header.Add("traceableai-module-version", VERSION)
 
-	resp, err := httpClient.Do(req)
-	if err == nil {
-		_ = resp.Body.Close()
-	}
+	return req
 }
 
-func readRequestBody(req *http.Request, _ *Config) ([]byte, error) {
+func readRequestBody(req *http.Request, cfg *Config) ([]byte, error) {
 	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
 	}
 	req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	return bodyBytes, nil
+	limitSize := len(bodyBytes)
+	if limitSize > cfg.BodyCaptureSize {
+		limitSize = cfg.BodyCaptureSize
+	}
+	bodyBytesMax := bodyBytes[:limitSize]
+	return bodyBytesMax, nil
 }
 
 func splitIPAndPort(addr string) (string, int, error) {
