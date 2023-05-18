@@ -88,8 +88,8 @@ func processQueue(queue chan *http.Request, client *http.Client) {
 func sendRequest(client *http.Client, req *http.Request, queue chan *http.Request) {
 	resp, err := client.Do(req)
 	if err != nil {
-		// if a request fails, re-queue it
-		queue <- req
+		// if a request fails, attempt to re-queue it
+		enqueue(queue, req)
 	}
 	if resp != nil {
 		// discord the body, otherwise many conns will stay in TIME_WAIT state
@@ -180,11 +180,8 @@ func (plugin *Traceable) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	duration := endTime.Sub(startTime)
 
 	extCapRequest := MakeRequest(plugin.config, extCap, duration)
-	if len(plugin.queue) > 100000 {
-		return
-	}
 	if extCapRequest != nil {
-		plugin.queue <- extCapRequest
+		enqueue(plugin.queue, extCapRequest)
 	}
 
 }
@@ -254,6 +251,14 @@ func splitIPAndPort(addr string) (string, int, error) {
 		return "", 0, err
 	}
 	return host, port, nil
+}
+
+func enqueue(queue chan *http.Request, req *http.Request) {
+	select {
+	case queue <- req:
+	default:
+		// dropped request, otherwise we will block
+	}
 }
 
 func canRecordBody(headers map[string]string, config *Config) bool {
