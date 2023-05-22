@@ -104,9 +104,8 @@ func TestMakeRequest(t *testing.T) {
 	defer ts.Close()
 
 	config.TpaEndpoint = ts.URL
-	client := CreateClient()
 
-	MakeRequest(config, extCapData, duration, client)
+	MakeRequest(config, extCapData, duration)
 }
 
 func TestCanRecordBody(t *testing.T) {
@@ -150,10 +149,11 @@ func TestCanRecordBody(t *testing.T) {
 func TestReadRequestBody(t *testing.T) {
 	testBody := "test body"
 	req, err := http.NewRequest("POST", "/test", bytes.NewBuffer([]byte(testBody)))
+	config := &Config{BodyCaptureSize: 100}
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	bodyBytes, err := readRequestBody(req, nil)
+	bodyBytes, err := readRequestBody(req, config)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
