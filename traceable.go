@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.0.1-dev"
+const VERSION = "1.0.0"
 const WORKERS = 20
 
 type Config struct {
