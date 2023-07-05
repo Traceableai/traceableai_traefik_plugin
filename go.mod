@@ -1,4 +1,4 @@
-module traceableai_traefik_plugin
+module github.com/traceableai/traceableai_traefik_plugin
 
 go 1.19
 
