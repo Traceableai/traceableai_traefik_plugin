@@ -11,7 +11,7 @@ In your `traefik.yml` you need to add the plugin configuration:
 experimental:
   plugins:
     plugin-traceableai:
-      moduleName: github.com/traceableai/traceable_traefik_plugin
+      moduleName: github.com/Traceableai/traceable_traefik_plugin
       moduleVersion: 1.0.0
 ```
 

@@ -8,11 +8,11 @@ api:
 providers:
   docker: {}
   file:
-    filename: /plugins-local/src/github.com/traceableai/traceableai_traefik_plugin/local/dynamic_conf.yaml
+    filename: /plugins-local/src/github.com/Traceableai/traceableai_traefik_plugin/local/dynamic_conf.yaml
 log:
   level: ERROR
 
 experimental:
   localPlugins:
     plugin-traceableai:
-      moduleName: github.com/traceableai/traceableai_traefik_plugin
+      moduleName: github.com/Traceableai/Traceableai_traefik_plugin

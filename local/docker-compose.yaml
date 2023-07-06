@@ -3,13 +3,13 @@ version: '3'
 services:
   reverse-proxy:
     image: traefik:v2.9
-    command: --configfile=/plugins-local/src/github.com/traceableai/traceableai_traefik_plugin/local/traefik.yaml
+    command: --configfile=/plugins-local/src/github.com/Traceableai/traceableai_traefik_plugin/local/traefik.yaml
     ports:
       - "80:80"
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ../:/plugins-local/src/github.com/traceableai/traceableai_traefik_plugin
+      - ../:/plugins-local/src/github.com/Traceableai/traceableai_traefik_plugin
 
   echo-service:
     image: jmalloc/echo-server
